@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscrição no Evento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Aluno(a): Daniel Cardoso -->
+    <main>
+        <header class="topo">
+            <span class="icone-topo">🎟️</span>
+            <div>
+                <h1>Inscrição no Evento</h1>
+                <p class="subtitulo">Preencha seus dados para garantir sua vaga</p>
+            </div>
+        </header>
+
+        <form id="formInscricao" novalidate>
+            <label>Nome
+                <input type="text" id="nome" placeholder="Seu nome completo" required>
+            </label>
+
+            <label>E-mail
+                <input type="email" id="email" placeholder="voce@email.com" required>
+            </label>
+
+            <div class="linha">
+                <label>Estado
+                    <select id="estado" required>
+                        <option value="">Carregando estados...</option>
+                    </select>
+                </label>
+
+                <label>Cidade
+                    <!-- Desafio extra: filtro da lista de cidades -->
+                    <input type="text" id="filtroCidade" placeholder="Filtrar cidades..." disabled>
+                    <select id="cidade" disabled required>
+                        <option value="">Escolha um estado primeiro</option>
+                    </select>
+                </label>
+            </div>
+
+            <p id="qtdCidades"></p>
+            <p id="mensagem"></p>
+
+            <button type="submit">Inscrever</button>
+        </form>
+
+        <div id="resumo"></div>
+
+        <footer class="rodape">
+            Dados do <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank" rel="noopener">IBGE</a> · Daniel Cardoso
+        </footer>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
