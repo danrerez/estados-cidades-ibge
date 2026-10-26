@@ -36,13 +36,21 @@
                     </select>
                 </label>
 
-                <label>Cidade
-                    <!-- Desafio extra: filtro da lista de cidades -->
-                    <input type="text" id="filtroCidade" placeholder="Filtrar cidades..." disabled>
-                    <select id="cidade" disabled required>
+                <div class="campo">
+                    <label for="buscaCidade">Cidade</label>
+                    <!-- Desafio extra: campo único onde dá para digitar (filtra) ou escolher na lista -->
+                    <div class="combo" id="comboCidade">
+                        <input type="text" id="buscaCidade" placeholder="Escolha um estado primeiro"
+                               autocomplete="off" disabled role="combobox"
+                               aria-expanded="false" aria-controls="listaCidades">
+                        <span class="combo-seta" aria-hidden="true"></span>
+                        <ul id="listaCidades" class="combo-lista" role="listbox"></ul>
+                    </div>
+                    <!-- Select do exercício: é preenchido pela API e guarda a cidade escolhida -->
+                    <select id="cidade" disabled required hidden>
                         <option value="">Escolha um estado primeiro</option>
                     </select>
-                </label>
+                </div>
             </div>
 
             <p id="qtdCidades"></p>

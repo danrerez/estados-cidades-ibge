@@ -44,7 +44,32 @@ input:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(31, 78, 121, .18);
 }
 select:disabled, input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
-#filtroCidade { padding: 9px 12px; font-size: 14px; }
+
+/* Campo único de cidade: digita para filtrar ou escolhe na lista */
+.campo { display: grid; gap: 6px; }
+.combo { position: relative; }
+.combo input { padding-right: 38px; }
+.combo-seta {
+    position: absolute; right: 14px; top: 50%;
+    width: 8px; height: 8px; margin-top: -6px;
+    border-right: 2px solid #4b5563; border-bottom: 2px solid #4b5563;
+    transform: rotate(45deg); pointer-events: none;
+    transition: transform .2s, margin-top .2s;
+}
+.combo.aberto .combo-seta { transform: rotate(-135deg); margin-top: -2px; }
+.combo-lista {
+    display: none;
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 10;
+    margin: 0; padding: 6px; list-style: none;
+    max-height: 240px; overflow-y: auto;
+    background: #fff; border: 1px solid #cbd5e1; border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(31, 41, 55, .15);
+}
+.combo.aberto .combo-lista { display: block; }
+.combo-lista li { padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 15px; }
+.combo-lista li:hover, .combo-lista li.ativa { background: #e8eef5; }
+.combo-lista li.selecionada { color: #1f4e79; font-weight: 600; }
+.combo-lista li.vazio { color: #9ca3af; cursor: default; background: none; }
 
 .invalido { border-color: #b00020; background: #fffafa; }
 

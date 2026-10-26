@@ -4,7 +4,9 @@
 const selectEstado = document.getElementById('estado')
 const selectCidade = document.getElementById('cidade')
 const qtdCidades = document.getElementById('qtdCidades')
-const filtroCidade = document.getElementById('filtroCidade')
+const buscaCidade = document.getElementById('buscaCidade')
+const listaCidades = document.getElementById('listaCidades')
+const comboCidade = document.getElementById('comboCidade')
 const mensagem = document.getElementById('mensagem')
 const resumo = document.getElementById('resumo')
 
@@ -12,6 +14,11 @@ const URL_ESTADOS = 'https://servicodados.ibge.gov.br/api/v1/localidades/estados
 
 // Guarda a lista completa de cidades do estado para o filtro (desafio extra)
 let cidadesDoEstado = []
+let cidadesVisiveis = []
+let indiceAtivo = -1
+
+// normalize + replace remove os acentos, assim "sao" encontra "São Paulo"
+const semAcento = texto => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 function mostrarErro(texto) {
     mensagem.className = 'erro'
@@ -44,18 +51,14 @@ function carregarEstados() {
         })
 }
 
-// Preenche o select de cidades com a lista recebida (usado no carregamento e no filtro)
-function preencherCidades(cidades) {
-    selectCidade.innerHTML = cidades.length > 0
-        ? '<option value="">Selecione a cidade</option>'
-        : '<option value="">Nenhuma cidade encontrada</option>'
-
-    cidades.forEach(cidade => {
-        const option = document.createElement('option')
-        option.value = cidade.nome
-        option.textContent = cidade.nome
-        selectCidade.appendChild(option)
-    })
+// Coloca o campo de cidade em um estado (carregando, desabilitado ou liberado)
+function prepararCampoCidade(textoOpcao, placeholder, desabilitado) {
+    selectCidade.innerHTML = `<option value="">${textoOpcao}</option>`
+    selectCidade.disabled = desabilitado
+    buscaCidade.value = ''
+    buscaCidade.placeholder = placeholder
+    buscaCidade.disabled = desabilitado
+    fecharLista()
 }
 
 // 2) Carregar as cidades quando o estado mudar
@@ -63,22 +66,16 @@ selectEstado.addEventListener('change', () => {
     const uf = selectEstado.value
     resumo.innerHTML = ''
     mensagem.textContent = ''
-    filtroCidade.value = ''
+    qtdCidades.textContent = ''
     cidadesDoEstado = []
 
     if (uf === '') {
-        selectCidade.innerHTML = '<option value="">Escolha um estado primeiro</option>'
-        selectCidade.disabled = true
-        filtroCidade.disabled = true
-        qtdCidades.textContent = ''
+        prepararCampoCidade('Escolha um estado primeiro', 'Escolha um estado primeiro', true)
         return
     }
 
-    // TODO 2: mostrar "Carregando..." e desabilitar o select de cidades
-    selectCidade.innerHTML = '<option value="">Carregando...</option>'
-    selectCidade.disabled = true
-    filtroCidade.disabled = true
-    qtdCidades.textContent = ''
+    // TODO 2: mostrar "Carregando..." e desabilitar o campo de cidades
+    prepararCampoCidade('Carregando...', 'Carregando...', true)
 
     fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
         .then(resposta => {
@@ -89,11 +86,15 @@ selectEstado.addEventListener('change', () => {
             cidadesDoEstado = cidades
 
             // TODO 3: preencher o select de cidades (texto = cidade.nome)
-            preencherCidades(cidades)
+            prepararCampoCidade('Selecione a cidade', 'Digite ou selecione a cidade', false)
+            cidades.forEach(cidade => {
+                const option = document.createElement('option')
+                option.value = cidade.nome
+                option.textContent = cidade.nome
+                selectCidade.appendChild(option)
+            })
 
-            // TODO 4: habilitar o select novamente
-            selectCidade.disabled = false
-            filtroCidade.disabled = false
+            // TODO 4: habilitar o campo novamente (feito em prepararCampoCidade)
 
             // TODO 5: quantas cidades o estado tem
             const nomeEstado = selectEstado.options[selectEstado.selectedIndex].text
@@ -101,25 +102,103 @@ selectEstado.addEventListener('change', () => {
         })
         .catch(erro => {
             console.log(erro)
-            selectCidade.innerHTML = '<option value="">Erro ao carregar</option>'
+            prepararCampoCidade('Erro ao carregar', 'Erro ao carregar', true)
             mostrarErro('Não foi possível carregar as cidades. Tente escolher o estado novamente.')
         })
 })
 
-// Desafio extra: filtrar a lista de cidades enquanto o usuario digita
-filtroCidade.addEventListener('input', () => {
-    // normalize + replace remove os acentos, assim "sao" encontra "São Paulo"
-    const semAcento = texto => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    const busca = semAcento(filtroCidade.value.trim())
-    const selecionada = selectCidade.value
+// ===== Desafio extra: campo único para digitar ou selecionar a cidade =====
 
-    const filtradas = cidadesDoEstado.filter(cidade => semAcento(cidade.nome).includes(busca))
-    preencherCidades(filtradas)
+function abrirLista() {
+    if (buscaCidade.disabled) return
+    renderizarLista()
+    comboCidade.classList.add('aberto')
+    buscaCidade.setAttribute('aria-expanded', 'true')
+}
 
-    // Mantém a cidade escolhida se ela ainda estiver na lista filtrada
-    selectCidade.value = selecionada
-    // Se sobrou só uma cidade, já deixa ela selecionada
-    if (filtradas.length === 1) selectCidade.value = filtradas[0].nome
+function fecharLista() {
+    comboCidade.classList.remove('aberto')
+    buscaCidade.setAttribute('aria-expanded', 'false')
+    indiceAtivo = -1
+}
+
+// Monta a lista com as cidades que combinam com o que foi digitado
+function renderizarLista() {
+    const busca = semAcento(buscaCidade.value.trim())
+    cidadesVisiveis = cidadesDoEstado.filter(cidade => semAcento(cidade.nome).includes(busca))
+    listaCidades.innerHTML = ''
+
+    if (cidadesVisiveis.length === 0) {
+        listaCidades.innerHTML = '<li class="vazio">Nenhuma cidade encontrada</li>'
+        return
+    }
+
+    cidadesVisiveis.forEach((cidade, indice) => {
+        const item = document.createElement('li')
+        item.textContent = cidade.nome
+        item.setAttribute('role', 'option')
+        if (cidade.nome === selectCidade.value) item.classList.add('selecionada')
+        if (indice === indiceAtivo) item.classList.add('ativa')
+
+        // mousedown em vez de click para escolher antes do campo perder o foco
+        item.addEventListener('mousedown', evento => {
+            evento.preventDefault()
+            escolherCidade(cidade.nome)
+        })
+        listaCidades.appendChild(item)
+    })
+}
+
+function escolherCidade(nome) {
+    selectCidade.value = nome
+    buscaCidade.value = nome
+    buscaCidade.classList.remove('invalido')
+    fecharLista()
+}
+
+// Destaca a cidade navegada pelas setas do teclado
+function moverDestaque(passo) {
+    if (cidadesVisiveis.length === 0) return
+    indiceAtivo = (indiceAtivo + passo + cidadesVisiveis.length) % cidadesVisiveis.length
+    renderizarLista()
+    listaCidades.children[indiceAtivo].scrollIntoView({ block: 'nearest' })
+}
+
+buscaCidade.addEventListener('focus', abrirLista)
+buscaCidade.addEventListener('click', abrirLista)
+
+buscaCidade.addEventListener('input', () => {
+    // Ao digitar, a cidade só fica escolhida quando o texto bate com uma cidade da lista
+    const exata = cidadesDoEstado.find(cidade => semAcento(cidade.nome) === semAcento(buscaCidade.value.trim()))
+    selectCidade.value = exata ? exata.nome : ''
+    indiceAtivo = -1
+    abrirLista()
+})
+
+buscaCidade.addEventListener('keydown', evento => {
+    if (evento.key === 'ArrowDown') {
+        evento.preventDefault()
+        if (!comboCidade.classList.contains('aberto')) abrirLista()
+        moverDestaque(1)
+    } else if (evento.key === 'ArrowUp') {
+        evento.preventDefault()
+        moverDestaque(-1)
+    } else if (evento.key === 'Enter' && comboCidade.classList.contains('aberto')) {
+        // Enter escolhe a cidade destacada (ou a única que sobrou) em vez de enviar o formulário
+        const escolhida = cidadesVisiveis[indiceAtivo] || (cidadesVisiveis.length === 1 ? cidadesVisiveis[0] : null)
+        if (escolhida) {
+            evento.preventDefault()
+            escolherCidade(escolhida.nome)
+        }
+    } else if (evento.key === 'Escape') {
+        fecharLista()
+    }
+})
+
+// Ao sair do campo, mostra o nome exato da cidade escolhida (ex.: "aruja" vira "Arujá")
+buscaCidade.addEventListener('blur', () => {
+    if (selectCidade.value) buscaCidade.value = selectCidade.value
+    fecharLista()
 })
 
 // 3) Enviar o formulario
@@ -131,15 +210,19 @@ document.getElementById('formInscricao').addEventListener('submit', (evento) => 
 
     // Marca em vermelho os campos que não foram preenchidos corretamente
     let valido = true
-    ;[nome, email, selectEstado, selectCidade].forEach(campo => {
+    ;[nome, email, selectEstado].forEach(campo => {
         const erro = campo.value.trim() === '' || !campo.checkValidity()
         campo.classList.toggle('invalido', erro)
         if (erro) valido = false
     })
 
+    const semCidade = selectCidade.value === ''
+    buscaCidade.classList.toggle('invalido', semCidade)
+    if (semCidade) valido = false
+
     if (!valido) {
         resumo.innerHTML = ''
-        mostrarErro('Preencha nome, e-mail válido, estado e cidade.')
+        mostrarErro('Preencha nome, e-mail válido, estado e escolha uma cidade da lista.')
         return
     }
 
